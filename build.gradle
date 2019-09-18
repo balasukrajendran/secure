@@ -1,0 +1,110 @@
+buildscript { //2
+    repositories {
+        mavenLocal()
+        mavenCentral()
+        jcenter()
+    }
+    dependencies {
+        classpath 'org.gebish:geb-gradle:2.3'
+    }
+}
+plugins {
+    id 'java'
+    id 'groovy'
+}
+
+allprojects {
+    apply plugin: "groovy"
+    apply plugin: "java"
+}
+
+ext {
+
+    ext {
+        groovyVersion = '2.4.13'
+        gebVersion = '2.0'
+        commonsIoVersion = '2.6'
+        commonsLangVersion = '3.7'
+        slf4jApiVersion = '1.7.21'
+        spockReportsVersion = '1.4.0'
+
+        seleniumVersion = '3.11.0'
+
+        chromeDriverVersion = '2.37'
+        geckoDriverVersion = '0.19.1'
+        httpBuilderVersion = '0.7.1'
+    }
+}
+
+dependencies {
+    // If using Spock, need to depend on geb-spock
+    testCompile("org.gebish:geb-spock:$gebVersion")
+    testCompile("org.spockframework:spock-core:1.1-groovy-2.4") {
+        exclude group: "org.codehaus.groovy"
+    }
+    testCompile("org.codehaus.groovy:groovy-all:$groovyVersion")
+
+    // Utilities
+    testCompile("commons-io:commons-io:$commonsIoVersion")
+    testCompile("org.apache.commons:commons-lang3:$commonsLangVersion")
+
+    // Automation
+    compile group: 'io.github.bonigarcia', name: 'webdrivermanager', version: '3.3.0'
+    compile "org.seleniumhq.selenium:selenium-firefox-driver:$seleniumVersion"
+    compile "org.seleniumhq.selenium:selenium-chrome-driver:$seleniumVersion"
+    compile group: 'org.seleniumhq.selenium', name: 'selenium-support', version: '3.11.0'
+
+    // Extra libraries
+    compile group: 'org.codehaus.groovy.modules.http-builder', name: 'http-builder', version: '0.7.1'
+    compile group: 'com.fasterxml.jackson.core', name: 'jackson-databind', version: '2.0.1'
+    compile group: 'com.jayway.jsonpath', name: 'json-path', version: '2.0.0'
+    compile group: 'org.codehaus.jackson', name: 'jackson-mapper-asl', version: '1.9.13'
+    //applitools
+    compile group: 'com.applitools', name: 'eyes-selenium-java3', version: '3.9'
+
+    // If using digital stub
+    compile group: 'io.github.http-builder-ng', name: 'http-builder-ng-apache', version: '1.0.3'
+
+    // Spock reports
+    testCompile( 'com.athaydes:spock-reports:1.6.0' ) {
+        transitive = false // this avoids affecting your version of Groovy/Spock
+    }
+    testCompile("org.slf4j:slf4j-api:${slf4jApiVersion}")
+    testCompile("org.slf4j:slf4j-simple:${slf4jApiVersion}")
+
+    compile 'org.codehaus.groovy:groovy-all:2.3.11'
+    testCompile group: 'junit', name: 'junit', version: '4.12'
+    compile "org.scala-lang:scala-library:2.12.7"
+}
+
+
+repositories {
+    jcenter()
+    mavenCentral()
+}
+
+
+tasks.withType(Test) {
+    outputs.upToDateWhen { false }  // Always run tests
+    String reportsBaseDir = "$buildDir/reports/$name-geb"
+
+    // gradle reports
+    systemProperty "geb.build.reportsDir", reportsBaseDir + "/gradle"
+
+    // junit reports
+    reports.junitXml.setDestination(file(reportsBaseDir + "/junit"))
+    reports.html.setDestination(file(reportsBaseDir + "/gradle"))
+
+    // spock reports
+    systemProperty 'com.athaydes.spockframework.report.enabled', "true"
+    systemProperty 'com.athaydes.spockframework.report.showCodeBlocks', 'true'
+    systemProperty 'com.athaydes.spockframework.report.outputDir', reportsBaseDir + "/spock"
+
+    systemProperty "geb.build.baseUrl", System.getProperty("geb.build.baseUrl", "https://www.google.com")
+    systemProperty "geb.build.isStandalone", System.getProperty("geb.build.isStandalone", "true")
+    
+}
+
+test {
+    systemProperty "geb.env", System.getProperty("geb.env", "chrome") // default to Chrome
+}
